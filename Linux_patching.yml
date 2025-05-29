@@ -1,0 +1,73 @@
+- name: Patching playbook
+  host: all
+  serial: 1
+  become: true
+  gather_facts: true
+  vars: 
+        package:
+            - httpd
+            - php
+            - firewalld
+        
+        ubuntupkg:
+            - apache2
+            - php
+            - ufw
+        
+        
+  tasks:
+        
+        - block:
+            - name: server Precheck
+              shell: Prechecks.sh
+              args:
+                creates: prechecks.log
+        
+            - name: patcing path update
+              yum:
+                name: "{{item}}"
+                enablerepo: "path1,path2"
+                status: latest
+                register: package_update
+              with_item:
+                    - "{{package}}"
+                    
+              notify: pkg_update_done
+              when: "{{ansible_distrubition}}" == 'redhat' and "{{ansible_distrubition_major_version}}" => '7' or "{{ansible_distrubition}}" == 'CentOS'
+             
+             
+            - debug:
+                    msg: "{{package_update}}"
+                
+            - name: Ubuntu base OS package update
+              apt: "{{item}}"
+              state: latest
+              with_item:
+                - "{{ubuntupkg}}"
+              register: package_update_ubuntu
+              notify: pkg_ubnt_update_done
+              when: "{{ansible_distrubition}}" == 'ubuntu'
+              
+            - debug:
+                msg: "{{package_update_ubuntu}}"
+                
+           
+            
+          rescue: 
+            - debug:
+                msg: "task is failed now check the error and again execute it"
+
+
+    handlers:
+        - name: redhat base os service restart
+          service:
+               name: httpd
+               state: restarted
+          listen: pkg_update_done
+          
+          
+        - name: ubuntu base os service restart
+          service:
+            name: apache2
+            state: restarted
+          listen: pkg_ubnt_update_done
