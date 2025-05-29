@@ -21,7 +21,7 @@
             - name: server Precheck
               shell: Prechecks.sh
               args:
-                creates: prechecks.log
+                creates: prechecks.sh
         
             - name: patcing path update
               yum:
@@ -51,7 +51,13 @@
             - debug:
                 msg: "{{package_update_ubuntu}}"
                 
-           
+                
+            - name: server postcheck
+              shell: postcheck.sh
+              args:
+                creates: postcheck.sh 
+            
+            
             
           rescue: 
             - debug:
